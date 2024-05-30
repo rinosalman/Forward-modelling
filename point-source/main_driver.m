@@ -31,6 +31,7 @@ eqType = 'strike-slip'; %options: 'normal', 'thrust', 'strike-slip'
 laws = 'Wells_and_Coppersmith'; %options: 'Wells_and_Coppersmith', 'Blaser_et_all'
 
 % unit vectors in east, north, and up components
+% only if you intend to generate LOS deformation and you know the unit vectors for your areas, currently I don't know how to generalize the unit vectors that would work for any areas
 uvENUasc = [-0.591690104047, -0.127004014368, 0.796098398603]; 
 uvENUdsc = [ 0.63818047602, -0.137820596558, 0.75744938472]; 
 
