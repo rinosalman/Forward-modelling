@@ -1,40 +1,35 @@
-%% Generate synthetic surface deformation due to an earthquake provided by user
+%% Generate synthetic surface deformation of an earthquake
 %% August, 2022
+%% add lines for plotting, June 2024
 %% Rino Salman, EOS, NTU
 close all;clear all
 
 
 %% Provide required information here
-% region range to generate synthetic locations
+% range of a region to generate synthetic locations
 S = 0;
 N = 1;
 W = 95;
 E = 99;
-incEW = 0.25;
-incNS = 0.25;
+incEW = 0.0625;
+incNS = 0.0225;
 
 % fault plane solutions (either from GCMT or USGS)
 % strike, dip, rake (degrees)
 plane1 = [ 0,90,0];
 plane2 = [90,90,0];
 
-% hypocenter location (either from GCMT or USGS)
+% hypocenter location
 hypoLon = 97;
 hypoLat = 0.5;
-hypoDep = 0; %meter
+hypoDep = 1000; %meter
 
-% magnitude (either from GCMT or USGS)
+% magnitude
 mw = 6.5;
 
 % earthquake type
 eqType = 'strike-slip'; %options: 'normal', 'thrust', 'strike-slip'
 laws = 'Wells_and_Coppersmith'; %options: 'Wells_and_Coppersmith', 'Blaser_et_all'
-
-% unit vectors in east, north, and up components
-% only if you intend to generate LOS deformation and you know the unit vectors for your areas, currently I don't know how to generalize the unit vectors that would work for any areas
-uvENUasc = [-0.591690104047, -0.127004014368, 0.796098398603]; 
-uvENUdsc = [ 0.63818047602, -0.137820596558, 0.75744938472]; 
-
 
 
 
@@ -50,14 +45,22 @@ lat0 = mean(extraLat(:));
 [xs, ys] = latlon_to_xy (extraLat(:), extraLon(:), lat0, lon0);
 loc = [xs*1000, ys*1000]; % to meter
 
+% unit vectors in east, north, and up components
+% ALOS-2
+%uvENUascA2 = [-0.510910046564734, -0.0999752952345185, 0.853800766695691];
+%uvENUdscA2 = [ 0.621778720611375, -0.11081923838962, 0.775312601643633];
+% Sentinel-1
+uvENUascS1 = [-0.591690104047, -0.127004014368, 0.796098398603];
+uvENUdscS1 = [ 0.63818047602, -0.137820596558, 0.75744938472];
+
 % unit vectors
 Ndata=numel(extraLon(:));
-uvEasc = ones(Ndata,1).*uvENUasc(1);
-uvNasc = ones(Ndata,1).*uvENUasc(2);
-uvUasc = ones(Ndata,1).*uvENUasc(3);
-uvEdsc = ones(Ndata,1).*uvENUdsc(1);
-uvNdsc = ones(Ndata,1).*uvENUdsc(2);
-uvUdsc = ones(Ndata,1).*uvENUdsc(3);
+uvEasc = ones(Ndata,1).*uvENUascS1(1);
+uvNasc = ones(Ndata,1).*uvENUascS1(2);
+uvUasc = ones(Ndata,1).*uvENUascS1(3);
+uvEdsc = ones(Ndata,1).*uvENUdscS1(1);
+uvNdsc = ones(Ndata,1).*uvENUdscS1(2);
+uvUdsc = ones(Ndata,1).*uvENUdscS1(3);
 
 % get length, width, and expected slip
 [L, Wi, slip] = rupture_size_slip(eqType, mw, laws);
@@ -100,8 +103,8 @@ for i=1:length(uvEasc)
     losAsc1 = [losAsc1;temp];
 end
 %save
-temp = [extraLon(:), extraLat(:), uvEasc, uvNasc, uvUasc, losAsc1];
-writematrix(temp,'synthetic_los_due_to_plane1_ascending.txt','Delimiter','space')
+temp1 = [extraLon(:), extraLat(:), uvEasc, uvNasc, uvUasc, losAsc1];
+writematrix(temp1,'synthetic_los_S1_due_to_plane1_ascending.txt','Delimiter','space')
 
 % descending
 losDsc1=[];
@@ -110,8 +113,8 @@ for i=1:length(uvEdsc)
     losDsc1 = [losDsc1;temp];
 end
 %save
-temp = [extraLon(:), extraLat(:), uvEdsc, uvNdsc, uvUdsc, losDsc1];
-writematrix(temp,'synthetic_los_due_to_plane1_descending.txt','Delimiter','space')
+temp2 = [extraLon(:), extraLat(:), uvEdsc, uvNdsc, uvUdsc, losDsc1];
+writematrix(temp2,'synthetic_los_S1_due_to_plane1_descending.txt','Delimiter','space')
 
 % synthetic surface displacement due to plane 2 (unit m)
 mInitial2 = [xF2,yF2,hypoDep,plane2(1),plane2(2),plane2(3),slip,L,Wi];
@@ -127,8 +130,8 @@ for i=1:length(uvEasc)
     losAsc2 = [losAsc2;temp];
 end
 %save
-temp = [extraLon(:), extraLat(:), uvEasc, uvNasc, uvUasc, losAsc2];
-writematrix(temp,'synthetic_los_due_to_plane2_ascending.txt','Delimiter','space')
+temp3 = [extraLon(:), extraLat(:), uvEasc, uvNasc, uvUasc, losAsc2];
+writematrix(temp3,'synthetic_los_S1_due_to_plane2_ascending.txt','Delimiter','space')
 
 % descending
 losDsc2=[];
@@ -137,6 +140,57 @@ for i=1:length(uvEdsc)
     losDsc2 = [losDsc2;temp];
 end
 %save
-temp = [extraLon(:), extraLat(:), uvEdsc, uvNdsc, uvUdsc, losDsc2];
-writematrix(temp,'synthetic_los_due_to_plane2_descending.txt','Delimiter','space')
+temp4 = [extraLon(:), extraLat(:), uvEdsc, uvNdsc, uvUdsc, losDsc2];
+writematrix(temp4,'synthetic_los_S1_due_to_plane2_descending.txt','Delimiter','space')
 
+
+%% plot
+% unwrapped LOS
+figure
+sz=3;
+tocm=100;
+t=tiledlayout(2,2,'TileSpacing','Compact','Padding','Compact');
+nexttile
+scatter(temp1(:,1),temp1(:,2),sz,temp1(:,6)*tocm,'filled')
+colormap(redblue(128))
+box on
+nexttile
+scatter(temp2(:,1),temp2(:,2),sz,temp2(:,6)*tocm,'filled')
+colormap(redblue(128))
+box on
+nexttile
+scatter(temp3(:,1),temp3(:,2),sz,temp3(:,6)*tocm,'filled')
+colormap(redblue(128))
+box on
+nexttile
+scatter(temp4(:,1),temp4(:,2),sz,temp4(:,6)*tocm,'filled')
+colormap(redblue(128))
+box on
+h = axes(t,'visible','off');
+c = colorbar(h,'Position',[0.965 0.330 0.022 0.35]);
+
+% wrapped LOS
+figure
+%wvlA2=24; % wavelength of ALOS-2, in cm
+wvlS1=5.6; % wavelength of sentinel-1, in cm
+temp1(:,6)=mod(temp1(:,6)*tocm,wvlS1/2);
+temp2(:,6)=mod(temp2(:,6)*tocm,wvlS1/2);
+temp3(:,6)=mod(temp3(:,6)*tocm,wvlS1/2);
+temp4(:,6)=mod(temp4(:,6)*tocm,wvlS1/2);
+t=tiledlayout(2,2,'TileSpacing','Compact','Padding','Compact');
+nexttile
+scatter(temp1(:,1),temp1(:,2),sz,temp1(:,6),'filled')
+colormap(redblue(128))
+box on
+nexttile
+scatter(temp2(:,1),temp2(:,2),sz,temp2(:,6),'filled')
+colormap(redblue(128))
+box on
+nexttile
+scatter(temp3(:,1),temp3(:,2),sz,temp3(:,6),'filled')
+colormap(redblue(128))
+box on
+nexttile
+scatter(temp4(:,1),temp4(:,2),sz,temp4(:,6),'filled')
+colormap(redblue(128))
+box on
